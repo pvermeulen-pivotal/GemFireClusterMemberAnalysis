@@ -6,7 +6,7 @@
 
     <groupId>vmware.data</groupId>
     <artifactId>gemfire-analysis-capture</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0-RELEASE</version>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
@@ -140,38 +140,6 @@
                 </configuration>
             </plugin>
 
-            <!--            <plugin>-->
-            <!--                <groupId>com.google.cloud.tools</groupId>-->
-            <!--                <artifactId>jib-maven-plugin</artifactId>-->
-            <!--                <version>3.3.0</version>-->
-            <!--                <configuration>-->
-            <!--                    <from>-->
-            <!--                        <image>openjdk:11.0.4-jre-slim</image>-->
-            <!--                    </from>-->
-            <!--                    <to>-->
-            <!--                        <image>us.gcr.io/pde-pvermeulen/${project.artifactId}</image>-->
-            <!--                        &lt;!&ndash; optional: create a tag based on the git commit id (via the git-commit-id plugin): &ndash;&gt;-->
-            <!--                        <tags>-->
-            <!--                            <tag>latest</tag>-->
-            <!--                        </tags>-->
-            <!--                    </to>-->
-            <!--                    <container>-->
-            <!--                        <mainClass>verizon.gemfire.client.Client</mainClass>-->
-            <!--                        <jvmFlags>-->
-            <!--                            <jvmFlag>-server</jvmFlag>-->
-            <!--                        </jvmFlags>-->
-            <!--                    </container>-->
-            <!--                </configuration>-->
-            <!--                <executions>-->
-            <!--                    <execution>-->
-            <!--                        <id>build-and-push-docker-image</id>-->
-            <!--                        <phase>package</phase>-->
-            <!--                        <goals>-->
-            <!--                            <goal>build</goal>-->
-            <!--                        </goals>-->
-            <!--                    </execution>-->
-            <!--                </executions>-->
-            <!--            </plugin>-->
         </plugins>
     </build>
 
