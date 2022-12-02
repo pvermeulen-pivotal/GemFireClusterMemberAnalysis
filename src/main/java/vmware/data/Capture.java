@@ -1,5 +1,8 @@
 package vmware.data;
 
+import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.geode.cache.*;
 import org.apache.geode.cache.control.ResourceManager;
@@ -430,15 +433,37 @@ public class Capture implements Function {
     }
 
     private void processMeters(InternalCache cache, StringBuilder sb) {
-        sb.append("<h3><b>").append("Meter Registry").append("</b></h3>").append("<table>");
+        sb.append("<h3><b>").append("Meter Registry").append("</b></h3>");
         if (cache.getMeterRegistry() != null && !cache.getMeterRegistry().getMeters().isEmpty())  {
-            sb.append("<tr><td><b>").append("Meter Name").append("</b></td><td><b>").append("Value").append("</b></td><td><b>")
+            sb.append("<table><tr><td><b>").append("Meter Name").append("</b></td><td><b>").append("Value").append("</b></td><td><b>")
                     .append("Type").append("</b></td></tr>");
-            cache.getMeterRegistry().forEachMeter(meter -> {
-                sb.append("<tr><td>").append(meter.getId().getName()).append("</td>");
-                sb.append("<td>").append(meter.getId().getDescription()).append("</td>");
-                sb.append("<td>").append(meter.getId().getType()).append("</td></tr>");
-            });
+            CompositeMeterRegistry cmr = (CompositeMeterRegistry) cache.getMeterRegistry();
+            if (cmr.getRegistries() != null && cmr.getRegistries().isEmpty()) {
+                List<String> meters = new ArrayList<>();
+                cache.getMeterRegistry().forEachMeter(meter -> {
+                    if (!meters.contains(meter.getId().getName())) {
+                        meters.add(meter.getId().getName());
+                        log.debug("Meter name: {}, type {}", meter.getId().getName(), meter.getId().getType());
+                        sb.append("<tr><td>").append(meter.getId().getName()).append("</td>");
+                        sb.append("<td>").append(meter.getId().getDescription()).append("</td>");
+                        sb.append("<td>").append(meter.getId().getType()).append("</td></tr>");
+                    }
+                });
+            } else {
+                cmr.getRegistries().forEach(registry -> {
+                    log.info("Registry Tags: {}",registry.config().commonTags());
+                    List<String> meters = new ArrayList<>();
+                    registry.getMeters().forEach(meter -> {
+                        if (!meters.contains(meter.getId().getName())) {
+                            meters.add(meter.getId().getName());
+                            log.debug("Meter name: {}, type {}", meter.getId().getName(), meter.getId().getType());
+                            sb.append("<tr><td>").append(meter.getId().getName()).append("</td>");
+                            sb.append("<td>").append(meter.getId().getDescription()).append("</td>");
+                            sb.append("<td>").append(meter.getId().getType()).append("</td></tr>");
+                        }
+                    });
+                });
+            }
             sb.append("</table>");
         } else {
             sb.append("<ui>").append("No Registered Meters Defined").append("</ui><br>");
@@ -453,25 +478,25 @@ public class Capture implements Function {
             sb.append("<tr><td>").append(k).append("</td><td>").append(v).append("</td></tr>");
         });
 
-        sb.append("<tr><td>").append("Distribution Manager Max Threads").append("</td><td>").append(System.getProperty("DistributionManager.MAX_THREADS") == null ? OperationExecutors.MAX_THREADS : System.getProperty("DistributionManager.MAX_THREADS")).append("</td></tr>");
-        sb.append("<tr><td>").append("Max Function Execution Threads").append("</td><td>").append(System.getProperty("DistributionManager.MAX_FE_THREADS") == null ? OperationExecutors.MAX_FE_THREADS : System.getProperty("DistributionManager.MAX_FE_THREADS")).append("</td></tr>");
-        sb.append("<tr><td>").append("Expiration Threads").append("</td><td>").append(System.getProperty("gemfire.EXPIRY_THREADS") == null ? "No Expiry Threads Defined" : System.getProperty("gemfire.EXPIRY_THREADS")).append("</td></tr>");
-        sb.append("<tr><td>").append("Non Replicated Tombstone Timeout").append("</td><td>").append(System.getProperty("gemfire.non-replicated-tombstone-timeout") == null ? TombstoneService.NON_REPLICATE_TOMBSTONE_TIMEOUT_DEFAULT : System.getProperty("gemfire.non-replicated-tombstone-timeout")).append("</td></tr>");
-        sb.append("<tr><td>").append("Tombstone GC Threshold").append("</td><td>").append(System.getProperty("gemfire.tombstone-gc-threshold") == null ? TombstoneService.GC_MEMORY_THRESHOLD : System.getProperty("gemfire.tombstone-gc-threshold")).append("</td></tr>");
-        sb.append("<tr><td>").append("Tombstone Scan Interval").append("</td><td>").append(System.getProperty("gemfire.tombstone-scan-interval") == null ? TombstoneService.DEFUNCT_TOMBSTONE_SCAN_INTERVAL_DEFAULT : System.getProperty("gemfire.tombstone-scan-interval")).append("</td></tr>");
-        sb.append("<tr><td>").append("Tombstone GC Memory Threshold").append("</td><td>").append(System.getProperty("gemfire.tombstone-gc-memory-threshold") == null ? TombstoneService.GC_MEMORY_THRESHOLD_DEFAULT : System.getProperty("gemfire.tombstone-gc-memory-threshold")).append("</td></tr>");
-        sb.append("<tr><td>").append("Event Thread Limit").append("</td><td>").append(System.getProperty("gemfire.Cache.EVENT_THREAD_LIMIT") == null ? "16" : System.getProperty("gemfire.Cache.EVENT_THREAD_LIMIT")).append("</td></tr>");
-        sb.append("<tr><td>").append("Event Queue Limit").append("</td><td>").append(System.getProperty("gemfire.Cache.EVENT_QUEUE_LIMIT") == null ? "4096" : System.getProperty("gemfire.Cache.EVENT_QUEUE_LIMIT")).append("</td></tr>");
-        sb.append("<tr><td>").append("Allow Persistent Transactions").append("</td><td>").append(System.getProperty("gemfire.ALLOW_PERSISTENT_TRANSACTIONS") == null ? TXManagerImpl.ALLOW_PERSISTENT_TRANSACTIONS : System.getProperty("gemfire.ALLOW_PERSISTENT_TRANSACTIONS")).append("</td></tr>");
-        sb.append("<tr><td>").append("Transaction Failover Map Size").append("</td><td>").append(System.getProperty("gemfire.transactionFailoverMapSize") == null ? TXManagerImpl.FAILOVER_TX_MAP_SIZE : System.getProperty("gemfire.transactionFailoverMapSize")).append("</td></tr>");
-        sb.append("<tr><td>").append("Default Max Oplog Size").append("</td><td>").append(System.getProperty("gemfire.DEFAULT_MAX_OPLOG_SIZE") == null ? DiskWriteAttributesImpl.getDefaultMaxOplogSize() : System.getProperty("gemfire.DEFAULT_MAX_OPLOG_SIZE")).append("</td></tr>");
-        sb.append("<tr><td>").append("Maximum Open Inactive OpLogs").append("</td><td>").append(System.getProperty("gemfire.MAX_OPEN_INACTIVE_OPLOGS") == null ? DiskStoreImpl.MAX_OPEN_INACTIVE_OPLOGS : System.getProperty("gemfire.MAX_OPEN_INACTIVE_OPLOGS")).append("</td></tr>");
-        sb.append("<tr><td>").append("Minimum Disk Space Fpr OpLogs").append("</td><td>").append(System.getProperty("gemfire.MIN_DISK_SPACE_FOR_LOGS") == null ? DiskStoreImpl.MIN_DISK_SPACE_FOR_LOGS : System.getProperty("gemfire.MIN_DISK_SPACE_FOR_LOGS")).append("</td></tr>");
-        sb.append("<tr><td>").append("OpLog Overflow Log Percentage").append("</td><td>").append(System.getProperty("gemfire.OVERFLOW_ROLL_PERCENTAGE") == null ? "50%" : System.getProperty("gemfire.OVERFLOW_ROLL_PERCENTAGE")).append("</td></tr>");
-        sb.append("<tr><td>").append("Shutdown All Pool Size").append("</td><td>").append(System.getProperty("gemfire.SHUTDOWN_ALL_POOL_SIZE") == null ? "-1" : System.getProperty("gemfire.SHUTDOWN_ALL_POOL_SIZE")).append("</td></tr>");
-        sb.append("<tr><td>").append("Max Query Execution Time").append("</td><td>").append(System.getProperty("gemfire.Cache.MAX_QUERY_EXECUTION_TIME") == null ? GemFireCacheImpl.MAX_QUERY_EXECUTION_TIME : System.getProperty("gemfire.Cache.MAX_QUERY_EXECUTION_TIME")).append("</td></tr>");
-        sb.append("<tr><td>").append("Suppress IOException Logging").append("</td><td>").append(System.getProperty("gemfire.bridge.suppressIOExceptionLogging") == null ? "false" : System.getProperty("gemfire.bridge.suppressIOExceptionLogging")).append("</td></tr>");
-        sb.append("<tr><td>").append("Verbose Query").append("</td><td>").append(System.getProperty("gemfire.Query.VERBOSE") == null ? DefaultQuery.QUERY_VERBOSE : System.getProperty("gemfire.Query.VERBOSE")).append("</td></tr>");
+        sb.append("<tr><td>").append("DistributionManager.MAX.THREADS").append("</td><td>").append(System.getProperty("DistributionManager.MAX_THREADS") == null ? OperationExecutors.MAX_THREADS : System.getProperty("DistributionManager.MAX_THREADS")).append("</td></tr>");
+        sb.append("<tr><td>").append("DistributionManager.MAX_FE_THREADS").append("</td><td>").append(System.getProperty("DistributionManager.MAX_FE_THREADS") == null ? OperationExecutors.MAX_FE_THREADS : System.getProperty("DistributionManager.MAX_FE_THREADS")).append("</td></tr>");
+        sb.append("<tr><td>").append("gemfire.EXPIRY_THREADS").append("</td><td>").append(System.getProperty("gemfire.EXPIRY_THREADS") == null ? "No Expiry Threads Defined" : System.getProperty("gemfire.EXPIRY_THREADS")).append("</td></tr>");
+        sb.append("<tr><td>").append("gemfire.non-replicated-tombstone-timeout").append("</td><td>").append(System.getProperty("gemfire.non-replicated-tombstone-timeout") == null ? TombstoneService.NON_REPLICATE_TOMBSTONE_TIMEOUT_DEFAULT : System.getProperty("gemfire.non-replicated-tombstone-timeout")).append("</td></tr>");
+        sb.append("<tr><td>").append("gemfire.tombstone-gc-threshold").append("</td><td>").append(System.getProperty("gemfire.tombstone-gc-threshold") == null ? TombstoneService.GC_MEMORY_THRESHOLD : System.getProperty("gemfire.tombstone-gc-threshold")).append("</td></tr>");
+        sb.append("<tr><td>").append("gemfire.tombstone-scan-interval").append("</td><td>").append(System.getProperty("gemfire.tombstone-scan-interval") == null ? TombstoneService.DEFUNCT_TOMBSTONE_SCAN_INTERVAL_DEFAULT : System.getProperty("gemfire.tombstone-scan-interval")).append("</td></tr>");
+        sb.append("<tr><td>").append("gemfire.tombstone-gc-memory-threshold").append("</td><td>").append(System.getProperty("gemfire.tombstone-gc-memory-threshold") == null ? TombstoneService.GC_MEMORY_THRESHOLD_DEFAULT : System.getProperty("gemfire.tombstone-gc-memory-threshold")).append("</td></tr>");
+        sb.append("<tr><td>").append("gemfire.Cache.EVENT_THREAD_LIMIT").append("</td><td>").append(System.getProperty("gemfire.Cache.EVENT_THREAD_LIMIT") == null ? "16" : System.getProperty("gemfire.Cache.EVENT_THREAD_LIMIT")).append("</td></tr>");
+        sb.append("<tr><td>").append("gemfire.Cache.EVENT_QUEUE_LIMIT").append("</td><td>").append(System.getProperty("gemfire.Cache.EVENT_QUEUE_LIMIT") == null ? "4096" : System.getProperty("gemfire.Cache.EVENT_QUEUE_LIMIT")).append("</td></tr>");
+        sb.append("<tr><td>").append("gemfire.ALLOW_PERSISTENT_TRANSACTIONS").append("</td><td>").append(System.getProperty("gemfire.ALLOW_PERSISTENT_TRANSACTIONS") == null ? TXManagerImpl.ALLOW_PERSISTENT_TRANSACTIONS : System.getProperty("gemfire.ALLOW_PERSISTENT_TRANSACTIONS")).append("</td></tr>");
+        sb.append("<tr><td>").append("gemfire.transactionFailoverMapSize").append("</td><td>").append(System.getProperty("gemfire.transactionFailoverMapSize") == null ? TXManagerImpl.FAILOVER_TX_MAP_SIZE : System.getProperty("gemfire.transactionFailoverMapSize")).append("</td></tr>");
+        sb.append("<tr><td>").append("gemfire.DEFAULT_MAX_OPLOG_SIZE").append("</td><td>").append(System.getProperty("gemfire.DEFAULT_MAX_OPLOG_SIZE") == null ? DiskWriteAttributesImpl.getDefaultMaxOplogSize() : System.getProperty("gemfire.DEFAULT_MAX_OPLOG_SIZE")).append("</td></tr>");
+        sb.append("<tr><td>").append("gemfire.MAX_OPEN_INACTIVE_OPLOGS").append("</td><td>").append(System.getProperty("gemfire.MAX_OPEN_INACTIVE_OPLOGS") == null ? DiskStoreImpl.MAX_OPEN_INACTIVE_OPLOGS : System.getProperty("gemfire.MAX_OPEN_INACTIVE_OPLOGS")).append("</td></tr>");
+        sb.append("<tr><td>").append("gemfire.MIN_DISK_SPACE_FOR_LOGS").append("</td><td>").append(System.getProperty("gemfire.MIN_DISK_SPACE_FOR_LOGS") == null ? DiskStoreImpl.MIN_DISK_SPACE_FOR_LOGS : System.getProperty("gemfire.MIN_DISK_SPACE_FOR_LOGS")).append("</td></tr>");
+        sb.append("<tr><td>").append("gemfire.OVERFLOW_ROLL_PERCENTAGE").append("</td><td>").append(System.getProperty("gemfire.OVERFLOW_ROLL_PERCENTAGE") == null ? "50%" : System.getProperty("gemfire.OVERFLOW_ROLL_PERCENTAGE")).append("</td></tr>");
+        sb.append("<tr><td>").append("gemfire.SHUTDOWN_ALL_POOL_SIZE").append("</td><td>").append(System.getProperty("gemfire.SHUTDOWN_ALL_POOL_SIZE") == null ? "-1" : System.getProperty("gemfire.SHUTDOWN_ALL_POOL_SIZE")).append("</td></tr>");
+        sb.append("<tr><td>").append("gemfire.Cache.MAX_QUERY_EXECUTION_TIME").append("</td><td>").append(System.getProperty("gemfire.Cache.MAX_QUERY_EXECUTION_TIME") == null ? GemFireCacheImpl.MAX_QUERY_EXECUTION_TIME : System.getProperty("gemfire.Cache.MAX_QUERY_EXECUTION_TIME")).append("</td></tr>");
+        sb.append("<tr><td>").append("gemfire.bridge.suppressIOExceptionLogging").append("</td><td>").append(System.getProperty("gemfire.bridge.suppressIOExceptionLogging") == null ? "false" : System.getProperty("gemfire.bridge.suppressIOExceptionLogging")).append("</td></tr>");
+        sb.append("<tr><td>").append("gemfire.Query.VERBOSE").append("</td><td>").append(System.getProperty("gemfire.Query.VERBOSE") == null ? DefaultQuery.QUERY_VERBOSE : System.getProperty("gemfire.Query.VERBOSE")).append("</td></tr>");
         sb.append("</table>");
     }
 
