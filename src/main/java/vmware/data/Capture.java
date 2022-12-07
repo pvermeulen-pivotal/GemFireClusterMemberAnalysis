@@ -580,7 +580,7 @@ public class Capture implements Function {
                 sb.append("<tr><td>").append("Parallel").append("</td><td>").append(queue.isParallel()).append("</td></tr>");
                 sb.append("<tr><td>").append("Async Event Listener").append("</td><td>").append(queue.getAsyncEventListener().getClass().getName()).append("</td></tr>");
                 if (queue.getGatewayEventSubstitutionFilter() == null) {
-                    sb.append("<tr><td>").append("Async Gateway Event Substitution Filter").append("</td><td>").append("No Event Substitution Filer Defined").append("</td></tr>");
+                    sb.append("<tr><td>").append("Async Gateway Event Substitution Filter").append("</td><td>").append("No Event Substitution Filter Defined").append("</td></tr>");
                 } else {
                     sb.append("<tr><td>").append("Async Gateway Event Substitution Filter").append("</td><td>").append(queue.getGatewayEventSubstitutionFilter().getClass().getName()).append("</td></tr>");
                 }
@@ -609,6 +609,9 @@ public class Capture implements Function {
         } else {
             sb.append("<table><tr><td><b>").append("Property").append("</b></td><td><b>").append("Value").append("</b></td></tr>");
             cache.getGatewaySenders().forEach(sender -> {
+                sender.getRemoteDSId();
+                sender.getEnforceThreadsConnectSameReceiver();
+                sender.getMaxParallelismForReplicatedRegion();
                 sb.append("<tr><td>").append("Sender Id").append("</td><td>").append(sender.getId()).append("</td></tr>");
                 sb.append("<tr><td>").append("Disk Persistence Enabled").append("</td><td>").append(sender.isPersistenceEnabled()).append("</td></tr>");
                 sb.append("<tr><td>").append("Sender Disk Store Name").append("</td><td>").append(sender.getDiskStoreName()).append("</td></tr>");
@@ -622,6 +625,9 @@ public class Capture implements Function {
                 sb.append("<tr><td>").append("Socket Read Timeout").append("</td><td>").append(sender.getSocketReadTimeout()).append("</td></tr>");
                 sb.append("<tr><td>").append("Batch Conflation Enabled").append("</td><td>").append(sender.isBatchConflationEnabled()).append("</td></tr>");
                 sb.append("<tr><td>").append("Parallel Sender").append("</td><td>").append(sender.isParallel()).append("</td></tr>");
+                sb.append("<tr><td>").append("Remote Distributed System Id").append("</td><td>").append(sender.getRemoteDSId()).append("</td></tr>");
+                sb.append("<tr><td>").append("Enforce Threads Connect Same Receiver").append("</td><td>").append(sender.getEnforceThreadsConnectSameReceiver()).append("</td></tr>");
+                sb.append("<tr><td>").append("Max Parallelism For Replicated Region").append("</td><td>").append(sender.getMaxParallelismForReplicatedRegion()).append("</td></tr>");
                 if (sender.getGatewayEventSubstitutionFilter() == null) {
                     sb.append("<tr><td>").append("Gateway Substitution Filter").append("</td><td>").append("No Gateway Substitution Filer Defined").append("</td></tr>");
                 } else {
@@ -861,7 +867,7 @@ public class Capture implements Function {
         } else {
             CacheLoader<?, ?> loader = region.getAttributes().getCacheLoader();
             sb.append("<table><tr><td><b>").append("Property").append("</b></td><td><b>").append("Value").append("</b></td></tr>");
-            sb.append("<tr><td>").append("Class Name").append("</td><td>").append(loader.getClass().getName()).append("</td></tr>");
+            sb.append("<tr><td>").append("Class Name").append("</td><td>").append(loader.getClass().getName()).append("</td></tr></table>");
         }
 
         sb.append("<h4><b>").append("Cache Writer").append("</b></h4>");
@@ -870,7 +876,7 @@ public class Capture implements Function {
         } else {
             sb.append("<table><tr><td><b>").append("Property").append("</b></td><td><b>").append("Value").append("</b></td></tr>");
             CacheWriter<?, ?> writer = region.getAttributes().getCacheWriter();
-            sb.append("<tr><td>").append("Class Name").append("</td><td>").append(writer.getClass().getName()).append("</td></tr>");
+            sb.append("<tr><td>").append("Class Name").append("</td><td>").append(writer.getClass().getName()).append("</td></tr></table>");
         }
 
         sb.append("<h4><b>").append("Custom Entry Idle").append("</b></h4>");
