@@ -1,4 +1,4 @@
-# GemFireClusterMemberAnalysis
+# Cluster Member Analysis
 
 The GemFire Cluster Member Analysis collects server details including JVM options, properties, services, configuration, etc. for 
 each server member in the cluster and create an HTML file for each server in the cluster.
