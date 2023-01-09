@@ -50,6 +50,20 @@ public class Capture implements Function {
         otherMembers.add(currentMember);
         final Set<InternalDistributedMember> members = otherMembers;
 
+        HashMap<String,String> sysConfig = new HashMap<>();
+        sysConfig.put("vm_swappiness", "/proc/sys/vm/swappiness");
+        sysConfig.put("somaxconn", "/proc/sys/net/core/somaxconn");
+        sysConfig.put("rmem_max","/proc/sys/net/core/rmem_max");
+        sysConfig.put("wmem_max","/proc/sys/net/core/wmem_max");
+        sysConfig.put("netdev_max_backlog","/proc/sys/net/core/netdev_max_backlog");
+        sysConfig.put("tcp_rmem","/proc/sys/net/ipv4/tcp_rmem");
+        sysConfig.put("tcp_wmem","/proc/sys/net/ipv4/tcp_wmem");
+        sysConfig.put("tcp_syncookies","/proc/sys/net/ipv4/tcp_syncookies");
+        sysConfig.put("shmmax","/proc/sys/kernel/shmmax");
+        sysConfig.put("nr_hugepages","/proc/sys/vm/nr_hugepages");
+        sysConfig.put("hugetlb_shm_group","/proc/sys/vm/hugetlb_shm_group");
+        sysConfig.put("transparent_hugepage","/sys/kernel/mm/transparent_hugepage/enabled");
+
         sb.append(currentMember.getName());
         sb.append("<html>").append("<heading>").append("</heading>").append("<title>").append("Cache Server Analysis").append("</title>").append("<body>")
                 .append("<br>");
@@ -69,7 +83,7 @@ public class Capture implements Function {
         processGroups(cache,sb, currentMember);
 
         // JVM details
-        processJVM(cache, sb);
+        processJVM(cache, sb, sysConfig);
 
         // pdx
         processPdx(cache, sb);
@@ -317,7 +331,7 @@ public class Capture implements Function {
         }
     }
 
-    private void processJVM(InternalCache cache, StringBuilder sb) {
+    private void processJVM(InternalCache cache, StringBuilder sb, HashMap<String, String> sysctl) {
         RuntimeMXBean runtimeMxBean = ManagementFactory.getRuntimeMXBean();
         sb.append("<h3><b>").append("JVM Class Path").append("</b></h3>");
 
@@ -328,30 +342,27 @@ public class Capture implements Function {
         List<String> arguments = runtimeMxBean.getInputArguments();
         arguments.forEach(arg -> sb.append("<ui>").append(arg).append("</ui>").append("<br>"));
 
-        // Linux kernel
-        sb.append("<h3><b>").append("VM Swappiness").append("</b></h3>");
-        try {
-            List<String> lines = Files.readAllLines(Paths.get("/proc/sys/vm/swappiness"));
-            lines.forEach(line -> sb.append("<ui>").append(line).append("</ui>").append("<br>"));
-        } catch (IOException e) {
-            sb.append("<ui>").append("VM Swappiness Not Found").append("</ui>").append("<br>");
-        }
-
-        sb.append("<h3><b>").append("System Limits").append("</b></h3>");
+        sb.append("<h3><b>").append("System/User Limits").append("</b></h3>");
         try {
             List<String> lines = Files.readAllLines(Paths.get("/etc/security/limits.conf"));
-            lines.forEach(line -> sb.append("<ui>").append(line).append("</ui>").append("<br>"));
+            lines.forEach(line -> {
+                if (!line.startsWith("#")) {
+                    sb.append("<ui>").append(line).append("</ui>").append("<br>");
+                }
+            });
         } catch (IOException e) {
             sb.append("<ui>").append("Limits Not Found").append("</ui>").append("<br>");
         }
 
-        sb.append("<h3><b>").append("System Control Configuration").append("</b></h3>");
-        try {
-            List<String> lines = Files.readAllLines(Paths.get("/etc/sysctl.conf"));
-            lines.forEach(line -> sb.append("<ui>").append(line).append("</ui>").append("<br>"));
-        } catch (IOException e) {
-            sb.append("<ui>").append("System Control Not Found").append("</ui>").append("<br>");
-        }
+        sb.append("<h3><b>").append("System Configuration").append("</b></h3>");
+        sysctl.forEach((k,v) -> {
+            try {
+                String line = Files.readString(Paths.get(v));
+                sb.append("<ui>").append(k + ": ").append(line).append("</ui>").append("<br>");
+            } catch (IOException e) {
+                sb.append("<ui>").append(k + " property not found").append("</ui>").append("<br>");
+            }
+        });
     }
 
     private void processCacheServices(InternalCache cache, StringBuilder sb) {
@@ -497,6 +508,8 @@ public class Capture implements Function {
         sb.append("<tr><td>").append("gemfire.Cache.MAX_QUERY_EXECUTION_TIME").append("</td><td>").append(System.getProperty("gemfire.Cache.MAX_QUERY_EXECUTION_TIME") == null ? GemFireCacheImpl.MAX_QUERY_EXECUTION_TIME : System.getProperty("gemfire.Cache.MAX_QUERY_EXECUTION_TIME")).append("</td></tr>");
         sb.append("<tr><td>").append("gemfire.bridge.suppressIOExceptionLogging").append("</td><td>").append(System.getProperty("gemfire.bridge.suppressIOExceptionLogging") == null ? "false" : System.getProperty("gemfire.bridge.suppressIOExceptionLogging")).append("</td></tr>");
         sb.append("<tr><td>").append("gemfire.Query.VERBOSE").append("</td><td>").append(System.getProperty("gemfire.Query.VERBOSE") == null ? DefaultQuery.QUERY_VERBOSE : System.getProperty("gemfire.Query.VERBOSE")).append("</td></tr>");
+        sb.append("<tr><td>").append("p2p.backlog").append("</td><td>").append(System.getProperty("p2p.backlog") == null ? 1280 : System.getProperty("p2p.backlog")).append("</td></tr>");
+        sb.append("<tr><td>").append("p2p.listenerCloseTimeout").append("</td><td>").append(System.getProperty("p2p.listenerCloseTimeout") == null ? 60000 : System.getProperty("p2p.listenerCloseTimeout")).append("</td></tr>");
         sb.append("</table>");
     }
 

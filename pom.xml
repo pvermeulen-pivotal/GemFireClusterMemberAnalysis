@@ -17,63 +17,108 @@
     <dependencies>
 
         <dependency>
+            <groupId>com.vmware</groupId>
+            <artifactId>gemfire-metrics</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
             <groupId>com.vmware.gemfire</groupId>
             <artifactId>geode-core</artifactId>
             <version>9.15.2</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>com.vmware.gemfire</groupId>
             <artifactId>geode-wan</artifactId>
             <version>9.15.2</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>com.vmware.gemfire</groupId>
             <artifactId>geode-cq</artifactId>
             <version>9.15.2</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>com.vmware.gemfire</groupId>
             <artifactId>geode-lucene</artifactId>
             <version>9.15.2</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>com.vmware.gemfire</groupId>
             <artifactId>geode-membership</artifactId>
             <version>9.15.2</version>
+            <scope>provided</scope>
         </dependency>
 
 	<dependency>
            <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>1.18.24</version>
+        <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
             <version>2.17.2</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
             <version>2.17.2</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>1.7.32</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j-impl</artifactId>
             <version>2.17.2</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.prometheus</groupId>
+            <artifactId>simpleclient</artifactId>
+            <version>0.9.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.prometheus</groupId>
+            <artifactId>simpleclient_common</artifactId>
+            <version>0.9.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+            <version>1.9.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+            <version>1.6.3</version>
+            <scope>provided</scope>
         </dependency>
 
     </dependencies>
